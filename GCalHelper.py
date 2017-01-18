@@ -8,6 +8,7 @@ from oauth2client import tools
 from oauth2client.file import Storage
 
 import datetime
+import rfc3339
 
 try:
     import argparse
@@ -40,6 +41,15 @@ def get_credentials():
         print('Storing credentials to ' + credential_path)
     return credentials
 
+
+def getService():
+	credentials = get_credentials()
+	http = credentials.authorize(httplib2.Http())
+	service = discovery.build('calendar', 'v3', http=http)
+	
+	return service
+
+
 def getSevenDayInterval():
 	min_date = datetime.date.today()
 	min_time = datetime.time.min
@@ -49,49 +59,51 @@ def getSevenDayInterval():
 
 	min_datetime = datetime.datetime.combine(min_date, min_time)
 	max_datetime = datetime.datetime.combine(max_date, max_time)
-	
+
+	min_datetime = rfc3339.rfc3339(min_datetime,utc=True)
+	max_datetime = rfc3339.rfc3339(max_datetime,utc=True)
+
 	return (min_datetime, max_datetime)
 
+
 def retrieveCalendarIds():
-    credentials = get_credentials()
-    http = credentials.authorize(httplib2.Http())
-    service = discovery.build('calendar', 'v3', http=http)
-
-    page_token = None
-    while True:
-        calendarIds = service.calendarList().list(pageToken=page_token).execute()
-        for id in calendarIds['items']:
-            print('%s: %s is %s' % (id['summary'], id['id'], id['accessRole']))
-
-        page_token = calendarIds.get('nextPageToken')
-	if not page_token:
-	    break
-    return None
-
-def retrieveEventIds():
-	credentials = get_credentials()
-	http = credentials.authorize(httplib2.Http())
-	service = discovery.build('calendar','v3',http=http)
-
-	calendarId = 'l56c950i3e1mh73ebab9ovqark@group.calendar.google.com'	
-	sevenDayInterval = getSevenDayInterval()
-
+	service = getService()
+	
 	page_token = None
 	while True:
-		eventIds = service.events().list(calendarId=calendarId,pageToken=page_token).execute()
-		for id in eventIds['items']:
-			print('%s' % id['id'])
-		page_token = eventIds.get('nextPageToken')
+		calendarIds = service.calendarList().list(pageToken=page_token).execute()
+		for id in calendarIds['items']:
+			print('%s: %s is %s' % (id['summary'], id['id'], id['accessRole']))
+
+		page_token = calendarIds.get('nextPageToken')
 		if not page_token:
 			break
 	return None
 
 
-def insertEvent():
-	credentials = get_credentials()
-	http = credentials.authorize(httplib2.Http())
-	service = discovery.build('calendar','v3',http=http)
+def retrieveEventIds(calendarId):
+	service = getService()
 
+	sevenDayInterval = getSevenDayInterval()
+
+	event_entries = []
+
+	page_token = None
+	while True:
+		eventIds = service.events().list(calendarId=calendarId,
+					pageToken=page_token,
+					timeMin=sevenDayInterval[0],
+					timeMax=sevenDayInterval[1]).execute()
+		for id in eventIds['items']:
+			event_entries.append(id['id'])
+		page_token = eventIds.get('nextPageToken')
+		if not page_token:
+			break
+	return event_entries
+
+
+def insertEvent():
+	service = getService()
 	
 	calendarId = 'l56c950i3e1mh73ebab9ovqark@group.calendar.google.com'
 	eventBody = {
@@ -109,17 +121,21 @@ def insertEvent():
 	return None
 
 
-def eraseWeek():
+def eraseWeekEvents(calendarId):
+	service = getService()
+	
+	eventIds = retrieveEventIds(calendarId)
+	for id in eventIds:
+		service.events().delete(calendarId=calendarId, eventId=id).execute()
 	return None
 
 def updateSchedule(schedule):
 	calendarId = 's3tsbjjflit084riito75lkvc@group.calendar.google.com'
 
-	eraseWeek()
+	eraseWeek(calendarId)
 	for schedule_entry in schedule:
-		# insertSchedule(schedule_entry)
-		break
 	return None
 
 if __name__ == '__main__':
-    retrieveCalendarIds()
+	calendarId = 'l56c950i3e1mh73ebab9ovqark@group.calendar.google.com'
+	eraseWeekEvents(calendarId)

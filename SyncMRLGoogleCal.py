@@ -2,8 +2,8 @@ import mechanicalsoup
 import GCalHelper
 
 def loginMRL():
-	user = '7170'
-	password = 'bcpw00t'
+	user = 'mrluser'
+	password = 'mrlpassword'
 	website = 'https://cmmserv.mrl.illinois.edu/schedule/login.asp'
 	
 	browser = mechanicalsoup.Browser()
@@ -44,5 +44,4 @@ if __name__ == '__main__':
 	homePage = loginMRL()
 	schedule = findScheduleForWeek(homePage)
 	schedule.insert(0,calendarId)
-	GCalHelper.eraseWeekEvents(calendarId)
-	updateSchedule(schedule)
+	GCalHelper.updateSchedule(schedule)

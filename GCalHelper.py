@@ -8,6 +8,7 @@ from oauth2client import tools
 from oauth2client.file import Storage
 
 import datetime
+import dateutil.tz
 import rfc3339
 
 try:
@@ -39,6 +40,7 @@ def get_credentials():
         else: # Needed only for compatibility with Python 2.6
             credentials = tools.run(flow, store)
         print('Storing credentials to ' + credential_path)
+    
     return credentials
 
 
@@ -99,26 +101,8 @@ def retrieveEventIds(calendarId):
 		page_token = eventIds.get('nextPageToken')
 		if not page_token:
 			break
-	return event_entries
-
-
-def insertEvent():
-	service = getService()
 	
-	calendarId = 'l56c950i3e1mh73ebab9ovqark@group.calendar.google.com'
-	eventBody = {
-		'summary': 'New Thing',
-		'start': {
-			'dateTime': '2017-01-16T12:00:00-07:00',
-			'timeZone': 'America/Los_Angeles',
-		},
-		'end': {
-			'dateTime': '2017-01-16T14:00:00-07:00',
-			'timeZone': 'America/Los_Angeles',
-		},
-	}
-	event = service.events().insert(calendarId=calendarId,body=eventBody).execute()
-	return None
+	return event_entries
 
 
 def eraseWeekEvents(calendarId):
@@ -129,11 +113,36 @@ def eraseWeekEvents(calendarId):
 		service.events().delete(calendarId=calendarId, eventId=id).execute()
 	return None
 
-def updateSchedule(schedule):
-	calendarId = 's3tsbjjflit084riito75lkvc@group.calendar.google.com'
 
-	eraseWeek(calendarId)
+def extractDatetime(datetime_string):
+	datetime_output = datetime.datetime.strptime(datetime_string, '%m/%d/%Y %H:%M:%S %p')
+	
+	return rfc3339.rfc3339(datetime_output,utc=True)
+
+
+def convertToEvent(schedule_entry):
+	eventBody = {}
+	eventBody['summary'] = schedule_entry[0]
+	eventBody['start'] = {}
+	eventBody['end'] = {}
+	eventBody['start']['dateTime'] = extractDatetime(schedule_entry[1])
+	eventBody['end']['dateTime'] = extractDatetime(schedule_entry[2])
+	
+	return eventBody
+
+
+def updateSchedule(schedule):
+	service = getService()
+	
+	calendarId = schedule.pop(0)
+
+	eraseWeekEvents(calendarId)
+	
 	for schedule_entry in schedule:
+		eventBody = convertToEvent(schedule_entry)
+		service.events().insert(calendarId=calendarId,
+					body=eventBody).execute()
+
 	return None
 
 if __name__ == '__main__':

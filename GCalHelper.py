@@ -53,10 +53,10 @@ def getService():
 
 
 def getSevenDayInterval():
-	min_date = datetime.date.today()
+	min_date = datetime.date.today() + datetime.timedelta(days=1)
 	min_time = datetime.time.min
 
-	max_date = datetime.date.today() + datetime.timedelta(days=6)
+	max_date = datetime.date.today() + datetime.timedelta(days=7)
 	max_time = datetime.time.max
 
 	min_datetime = datetime.datetime.combine(min_date, min_time)
@@ -116,7 +116,8 @@ def eraseWeekEvents(calendarId):
 
 def extractDatetime(datetime_string):
 	datetime_output = datetime.datetime.strptime(datetime_string, '%m/%d/%Y %H:%M:%S %p')
-	
+	datetime_output = datetime_output + datetime.timedelta(days=1)
+
 	return rfc3339.rfc3339(datetime_output,utc=True)
 
 

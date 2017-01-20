@@ -2,8 +2,8 @@ import mechanicalsoup
 import GCalHelper
 
 def loginMRL():
-	user = '7170'
-	password = 'bcpw00t'
+	user = 'mrluser'
+	password = 'mrlpassword'
 	website = 'https://cmmserv.mrl.illinois.edu/schedule/login.asp'
 	
 	browser = mechanicalsoup.Browser()

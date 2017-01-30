@@ -115,10 +115,10 @@ def eraseWeekEvents(calendarId):
 
 
 def extractDatetime(datetime_string):
-	datetime_output = datetime.datetime.strptime(datetime_string, '%m/%d/%Y %H:%M:%S %p')
-	datetime_output = datetime_output + datetime.timedelta(days=1)
+	pattern = '%m/%d/%Y %I:%M:%S %p'
+	datetime_output = datetime.datetime.strptime(datetime_string,pattern)
 
-	return rfc3339.rfc3339(datetime_output,utc=True)
+	return rfc3339.rfc3339(datetime_output,utc=False)
 
 
 def convertToEvent(schedule_entry):
@@ -128,7 +128,7 @@ def convertToEvent(schedule_entry):
 	eventBody['end'] = {}
 	eventBody['start']['dateTime'] = extractDatetime(schedule_entry[1])
 	eventBody['end']['dateTime'] = extractDatetime(schedule_entry[2])
-	
+
 	return eventBody
 
 
